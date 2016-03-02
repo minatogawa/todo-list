@@ -1,11 +1,13 @@
 Todos = new Mongo.Collection('todos');
+Lists = new Mongo.Collection('lists');
 
 
 if (Meteor.isClient) {
 
   Template.todos.helpers({
     'todo':function(){
-      return Todos.find({}, {sort: {createdAt:-1}});
+      var currentList = this._id;
+      return Todos.find({listId:currentList}, {sort: {createdAt:-1}});
     }
   });
 
@@ -56,10 +58,12 @@ if (Meteor.isClient) {
     'submit form':function(event) {
       event.preventDefault();
       var todoName = $('[name="todoName"]').val();
+      var currentList = this._id;
       Todos.insert({
         name: todoName,
         completed: false,
         createdAt: new Date(),
+        listId: currentList,
       });
       $('[name="todoName"]').val("");
     }
@@ -67,15 +71,45 @@ if (Meteor.isClient) {
 
   Template.countingTasks.helpers({
     'totalTasks':function(){
-      return Todos.find().count();
+      var currentList = this._id;
+      return Todos.find({listId: currentList}).count();
     },
-
     'completedTasks':function(){
-      return Todos.find({completed: true}).count();
+      var currentList = this._id;
+      return Todos.find({listId: currentList, completed: true}).count();
     }
+  });
 
+  Template.addList.events({
+    'submit form':function(event){
+      event.preventDefault();
+      var listName = $('[name=listName]').val();
+      Lists.insert({
+        name: listName
+      }, function(error, results){
+            Router.go('listPage', {_id: results});
+      });
+      $('[name=listName]').val('');
+    }
+  });
 
-  })
+  Template.lists.events({
+    'click .delete-list':function(event){
+      event.preventDefault();
+      var currentList = this._id;
+      var confirm = window.confirm("Delete this list?");
+        if(confirm){
+          Lists.remove({_id: currentList});
+        }
+    },
+  });
+
+  Template.lists.helpers({
+    'list':function(){
+      return Lists.find({}, {sort: {name: 1}});
+    }
+  });
+
 
 }
 
@@ -94,4 +128,12 @@ Router.route('/', {
 });
 Router.configure({
   layoutTemplate: 'main',
+});
+Router.route('/list/:_id', {
+  name: 'listPage',
+  template:'listPage',
+  data: function(){
+    var currentList = this.params._id;
+    return Lists.findOne({_id: currentList});
+  }
 });
