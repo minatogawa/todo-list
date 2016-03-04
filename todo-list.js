@@ -16,11 +16,27 @@ if (Meteor.isClient) {
     'click .delete-todo':function(event){
       event.preventDefault();
       var documentId = this._id;
-      var confirm = window.confirm("Delete this taks?");
-        if(confirm){
-          Todos.remove({_id: documentId});
-        }
-    },
+        new Confirmation({
+          message: "Are you sure ?",
+          title: "Confirmation",
+          cancelText: "Cancel",
+          okText: "Ok",
+          success: true // wether the button should be green or red
+        }, function (ok) {
+          // ok is true if the user clicked on "ok", false otherwise
+            if(ok){
+              Todos.remove({_id: documentId});
+              Bert.alert({
+                title: 'Delete',
+                message: 'Tarefa removida com sucesso',
+                type: 'danger',
+                style: 'fixed-top',
+                icon: 'fa-remove'
+              });
+            }
+          }
+        );
+    },  
 
     'keyup [name=todoTask]': function(event){
       if(event.which == 13 || event.which == 27){
@@ -29,7 +45,13 @@ if (Meteor.isClient) {
           var documentId = this._id;
           var todoTask = $(event.target).val();
           Todos.update({_id: documentId}, {$set: {name: todoTask}});
-          console.log("Task changed to " + todoTask);
+          Bert.alert({
+            title: 'Atualização',
+            message: 'Tarefa atualizada com sucesso',
+            type: 'success',
+            style: 'fixed-top',
+            icon: 'fa-check'
+          });
         }  
     },
 
@@ -182,6 +204,15 @@ Router.route('/list/:_id', {
   template:'listPage',
   data: function(){
     var currentList = this.params._id;
-    return Lists.findOne({_id: currentList});
+    var currentUser = Meteor.userId();
+    return Lists.findOne({_id: currentList, createdBy: currentUser});
+  },
+  onBeforeAction:function(){
+    var currentUser = Meteor.userId();
+    if(currentUser){
+      this.next();
+    } else {
+        this.render('login');
+      }
   }
 });

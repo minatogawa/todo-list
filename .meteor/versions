@@ -27,6 +27,8 @@ ejson@1.0.7
 email@1.0.8
 es5-shim@4.1.14
 fastclick@1.0.7
+fortawesome:fontawesome@4.4.0_1
+fourseven:scss@3.3.3_3
 geojson-utils@1.0.4
 hot-code-push@1.0.0
 html-tools@1.0.5
@@ -47,6 +49,7 @@ launch-screen@1.0.4
 livedata@1.0.15
 localstorage@1.0.5
 logging@1.0.8
+matdutour:popup-confirm@0.1.25
 meteor@1.1.10
 meteor-base@1.0.1
 minifiers@1.1.7
@@ -76,6 +79,7 @@ srp@1.0.4
 standard-minifiers@1.0.2
 templating@1.1.5
 templating-tools@1.0.0
+themeteorchef:bert@2.1.0
 tracker@1.0.9
 ui@1.0.8
 underscore@1.0.4
