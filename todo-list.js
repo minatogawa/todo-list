@@ -141,20 +141,20 @@ if (Meteor.isClient) {
   Template.register.events({
     'submit form':function(event){
       event.preventDefault();
-      var email = $('[name=email]').val();
-      var password = $('[name=password]').val();
-      Accounts.createUser({
-        email: email,
-        password: password
-      },  function(error){
-          if(error){
-            console.log(error.reason);
-          } else{
-              Router.go('home');
-            }
-        }
-      );
-    }
+      // var email = $('[name=email]').val();
+      // var password = $('[name=password]').val();
+      // Accounts.createUser({
+        // email: email,
+        // password: password
+      // },  function(error){
+          // if(error){
+            // console.log(error.reason);
+          // } else{
+              // Router.go('home');
+            // }
+        // }
+      // );
+    },
   });
 
   Template.navigation.events({
@@ -168,17 +168,96 @@ if (Meteor.isClient) {
   Template.login.events({
     'submit form':function(){
       event.preventDefault();
-      var email = $('[name=email').val();
-      var password = $('[name=password]').val();
-      Meteor.loginWithPassword(email, password, function(error){
-        if(error){
-          console.log(error.reason);
-        } else {
-           Router.go('home');
-          }  
-      });
+      // var email = $('[name=email').val();
+      // var password = $('[name=password]').val();
+      // Meteor.loginWithPassword(email, password, function(error){
+        // if(error){
+          // console.log(error.reason);
+        // } else {
+           // Router.go('home');
+          // }  
+      // });
     }
-  })
+  });
+
+  $.validator.setDefaults({
+    rules:{
+      email:{
+        required:true,
+        email:true,
+      },
+      password:{
+        required:true,
+        minlength:6,
+      },
+    },
+    messages:{
+      email:{
+        required: "Insira um e-mail.",
+        email: "Insira um e-mail válido.",
+      },
+      password:{
+        required: "Insira uma senha.",
+        minlength: "Insira uma senha com no mínimo {0} caracteres.",
+      },
+    },
+  });
+
+  Template.login.onCreated(function(){
+    console.log("template created");
+  });
+
+  Template.login.onRendered(function(){
+    var validator =$('.login').validate({
+      submitHandler:function(event){
+        var email = $('[name=email').val();
+        var password = $('[name=password]').val();
+        Meteor.loginWithPassword(email, password, function(error){
+          if(error){
+            if(error.reason == "User not found"){
+              validator.showErrors({
+                email:error.reason
+              });
+            } if (error.reason == "Incorrect password"){
+                validator.showErrors({
+                  password:error.reason
+                });  
+              }
+          } else {
+              Router.go('home');
+            }  
+       });
+      }
+    });
+  });
+
+  Template.login.onDestroyed(function(){
+    console.log("template destroyed");
+  });
+
+  Template.register.onRendered(function(){
+   var validator = $('.register').validate({
+      submitHandler:function(event){
+        var email = $('[name=email]').val();
+        var password = $('[name=password]').val();
+        Accounts.createUser({
+          email: email,
+          password: password
+        }, function(error){
+            if(error){
+              if(error.reason == "Email already exists."){
+                validator.showErrors({
+                  email:error.reason
+                });
+              }
+            } else{
+               Router.go('home');
+              }
+           }
+        );
+      }
+    });
+  });
 
 
 }
