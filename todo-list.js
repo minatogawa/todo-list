@@ -4,6 +4,9 @@ Lists = new Mongo.Collection('lists');
 
 if (Meteor.isClient) {
 
+  /*Meteor.subscribe('lists');*/
+  // Meteor.subscribe('todos');
+
   Template.todos.helpers({
     'todo':function(){
       var currentUser = Meteor.userId();
@@ -138,6 +141,10 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.lists.onCreated(function(){
+    this.subscribe('lists');
+  });
+
   Template.register.events({
     'submit form':function(event){
       event.preventDefault();
@@ -267,6 +274,16 @@ if (Meteor.isServer) {
     // code to run on server at startup
 
   });
+  Meteor.publish('lists', function(){
+    var currentUser = this.userId;
+    return Lists.find({createdBy:currentUser});
+  });
+
+  Meteor.publish('todos', function(currentList){
+    var currentUser = this.userId;
+    return Todos.find({createdBy:currentUser, listId:currentList});
+  });
+
 }
 
 Router.route('/register');
@@ -274,9 +291,13 @@ Router.route('/login');
 Router.route('/', {
   name: 'home',
   template: 'home',
+  waitOn: function(){
+    return Meteor.subscribe('lists');
+  }
 });
 Router.configure({
   layoutTemplate: 'main',
+  loadingTemplate: 'loading',
 });
 Router.route('/list/:_id', {
   name: 'listPage',
@@ -293,5 +314,9 @@ Router.route('/list/:_id', {
     } else {
         this.render('login');
       }
+  },
+  waitOn:function(){
+    var currentList = this.params._id;
+    return Meteor.subscribe('todos', currentList);
   }
 });
