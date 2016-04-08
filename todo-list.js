@@ -112,14 +112,22 @@ if (Meteor.isClient) {
     'submit form':function(event){
       event.preventDefault();
       var listName = $('[name=listName]').val();
-      var currentUser = Meteor.userId();
-      Lists.insert({
-        name: listName,
-        createdBy: currentUser
-      }, function(error, results){
-            Router.go('listPage', {_id: results});
+      Meteor.call('createNewList', listName, function(error, results){
+        if(error){
+          console.log(error.reason);
+        } else {
+            Router.go('listPage', {_id:results});
+            $('[name=listName]').val('');
+          }
       });
-      $('[name=listName]').val('');
+      // var currentUser = Meteor.userId();
+      // Lists.insert({
+      //   name: listName,
+      //   createdBy: currentUser
+      // }, function(error, results){
+      //       Router.go('listPage', {_id: results});
+      // });
+      // $('[name=listName]').val('');
     }
   });
 
@@ -129,8 +137,13 @@ if (Meteor.isClient) {
       var currentList = this._id;
       var confirm = window.confirm("Delete this list?");
         if(confirm){
-          Lists.remove({_id: currentList});
+          Meteor.call('removeList', currentList)
         }
+      // var currentList = this._id;
+      // var confirm = window.confirm("Delete this list?");
+      //   if(confirm){
+      //     Lists.remove({_id: currentList});
+      //   }
     },
   });
 
@@ -283,6 +296,36 @@ if (Meteor.isServer) {
     var currentUser = this.userId;
     return Todos.find({createdBy:currentUser, listId:currentList});
   });
+
+  Meteor.methods({
+    'createNewList': function(listName){
+      check(listName, String);
+      if(listName==""){
+        listName = "Untitled";
+      };
+        var currentUser = Meteor.userId();
+        var data = {
+            name: listName,
+            createdBy: currentUser
+        }
+        if(!currentUser){
+            throw new Meteor.Error("not-logged-in", "You're not logged-in.");
+        }
+        return Lists.insert(data);
+    },
+
+    'removeList':function(currentList){
+      var currentUser = Meteor.userId();
+      var data = {
+        _id:currentList,
+        createdBy:currentUser,
+      }
+      if(!currentUser){
+        throw new Meteor.Error("not-logged-in", "You are not logged in");
+      }
+      Lists.remove(data);
+    }
+});
 
 }
 
