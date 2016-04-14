@@ -28,7 +28,8 @@ if (Meteor.isClient) {
         }, function (ok) {
           // ok is true if the user clicked on "ok", false otherwise
             if(ok){
-              Todos.remove({_id: documentId});
+              // Todos.remove({_id: documentId});
+              Meteor.call('removeListItem', documentId);
               Bert.alert({
                 title: 'Delete',
                 message: 'Tarefa removida com sucesso',
@@ -44,17 +45,18 @@ if (Meteor.isClient) {
     'keyup [name=todoTask]': function(event){
       if(event.which == 13 || event.which == 27){
         $(event.target).blur();
-      } else {
-          var documentId = this._id;
-          var todoTask = $(event.target).val();
-          Todos.update({_id: documentId}, {$set: {name: todoTask}});
-          Bert.alert({
+        Bert.alert({
             title: 'Atualização',
             message: 'Tarefa atualizada com sucesso',
             type: 'success',
             style: 'fixed-top',
             icon: 'fa-check'
           });
+      } else {
+          var documentId = this._id;
+          var todoTask = $(event.target).val();
+          Meteor.call('updateListItem', documentId, todoTask);
+          // Todos.update({_id: documentId}, {$set: {name: todoTask}}); 
         }  
     },
 
@@ -62,9 +64,11 @@ if (Meteor.isClient) {
       var documentId = this._id;
       var isCompleted = this.completed;
       if(isCompleted == false){
-          Todos.update({ _id: documentId }, {$set: { completed: true}});
+        Meteor.call('changeItemStatus', documentId, true);
+          // Todos.update({ _id: documentId}, {$set: { completed: true}});
       } else {
-          Todos.update({_id:documentId}, {$set: {completed:false}});
+        Meteor.call('changeItemStatus', documentId, false);
+          // Todos.update({_id:documentId}, {$set: {completed:false}});
         }
     },
   });
@@ -85,15 +89,21 @@ if (Meteor.isClient) {
       event.preventDefault();
       var todoName = $('[name="todoName"]').val();
       var currentList = this._id;
-      var currentUser = Meteor.userId();
-      Todos.insert({
-        name: todoName,
-        completed: false,
-        createdAt: new Date(),
-        createdBy: currentUser,
-        listId: currentList,
-      });
-      $('[name="todoName"]').val("");
+      Meteor.call('createListItem', todoName, currentList, function(error){
+        if(error){
+          console.log(error.reason);
+        } else {
+            $('[name="todoName"]').val("");  
+          }
+      })
+      // var currentUser = Meteor.userId();
+      // Todos.insert({
+      //   name: todoName,
+      //   completed: false,
+      //   createdAt: new Date(),
+      //   createdBy: currentUser,
+      //   listId: currentList,
+      // }); 
     }
   });
 
@@ -324,8 +334,71 @@ if (Meteor.isServer) {
         throw new Meteor.Error("not-logged-in", "You are not logged in");
       }
       Lists.remove(data);
+    },
+
+    'createListItem':function(todoName, currentList){
+      check(todoName, String);
+      check(currentList, String);
+      if(todoName==""){
+        todoName = "Untitled";
+      };
+      var currentUser = Meteor.userId();
+      var data = {
+        name: todoName,
+        completed: false,
+        createdAt: new Date(),
+        createdBy: currentUser,
+        listId: currentList,
+      }
+      if(!currentUser){
+        throw new Meteor.Error("not-logged-in", "You are not logged in");
+      }
+      var currentList = Lists.findOne(currentList);
+      if(currentList.createdBy != currentUser){
+        throw new Meteor.Error("invalid-user", "You don't own that list");
+      };
+
+      return Todos.insert(data);
+    },
+
+    'removeListItem':function(documentId){
+      var currentUser = Meteor.userId();
+      var data = {
+        _id: documentId,
+        createdBy: currentUser,
+      };
+      if(!currentUser){
+        throw new Meteor.Error ("you-are-not-logged-in", "You are not logged in.");
+      }
+      Todos.remove(data);
+    },
+    'updateListItem':function(documentId, todoTask){
+      check(todoTask, String);
+      var currentUser = Meteor.userId();
+      var data = {
+        _id: documentId, 
+        createdBy:currentUser
+      };
+      if(!currentUser){
+        throw new Meteor.Error("not-logged-in", "You are not logged in")
+      }
+      Todos.update(data, {$set: {name: todoTask}});
+    },
+    'changeItemStatus':function(documentId, status){
+      check(status, Boolean);
+      var currentUser = Meteor.userId();
+      var data = {
+        _id:documentId,
+        createdBy: currentUser,
+      };
+      if(!currentUser){
+        throw new Meteor.Error("you-are-not-logged-in", "You are not logged in");
+      }
+      Todos.update(data, {$set: { completed: status}});
     }
-});
+
+
+  });
 
 }
 
